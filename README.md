@@ -1,5 +1,4 @@
 # Automatic installation for zabbix
---------
 
 ## 说明
 
