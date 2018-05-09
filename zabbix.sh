@@ -38,6 +38,19 @@ ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "
 ###########################
 #	check
 ###########################
+
+memu(){
+        echo
+    echo "#############################################################"
+    echo "# Lamp Auto Install Script for CentOS 6.+                 #"
+    echo "# Def: Linux + Apache2.4 + MySQL5.7 + PHP7.0 + ZABBIX3.2    #"
+    echo "# Author: Gruiy <guanry@chingo.com>                         #"
+    echo "#############################################################"
+    echo
+    
+    echo "Press any key to start ... or Press Ctrl+C to cannel"
+    get_char
+}
 rootness(){
     if [[ ${EUID} -ne 0 ]]; then
        log "Error" "This script must be run as root"
@@ -83,6 +96,7 @@ disable_selinux(){
     fi
 }
 
+
 firewall_set(){
     log "Info" "Starting set Firewall..."
 
@@ -92,11 +106,11 @@ firewall_set(){
             if [ $? -eq 0 ]; then
                 iptables -L -n | grep -qi 80
                 if [ $? -ne 0 ]; then
-                    iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 80 -J ACCEPT
+                    iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
                 fi
-                iptabes -L -n | grep -qi 10051
+                iptabes -L -n | grep -qi 10050
                 if [ $? -ne 0 ]; then
-                    iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 10051 -j ACCEPT
+                    iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 10050 -j ACCEPT
                 fi
                 /etc/init.d/iptables save > /dev/null 2>&1
                 /etc/init.d/iptables restart > /dev/null 2>&1
@@ -112,7 +126,6 @@ firewall_set(){
         if [ $? -eq 0 ]; then
             firewall-cmd --permanent --zone=public --add-service=http > /dev/null 2>&1
             firewall-cmd --permanent --zone=public --add-port=10050/tcp > /dev/null 2>&1
-            firewall-cmd --permanent --zone=public --add-port=10051/tcp > /dev/null 2>&1
         fi
     fi
     log "Info" "Firewall set completed..."
@@ -128,38 +141,53 @@ configuare_proxy(){
     log "Eroor" "Cann't connect URL, Please check the ${cur_dir}/zabbix.log  manually..."
 }
 
-####################################
-# Install Apache+MySQL+PHP+ZABBIX
-####################################
-zabbix_configure_args(){
-    --prefix=/usr/local/zabbix \
-    --enable-server \
-    --enable-agent \
-    --with-mysql \
-    --with-net-snmp \
-    --with-libcurl \
-    --with-libxml2 \
+
+help_menu(){
+    echo "{Usage}:                                                  "
+    echo " ./zabbix.sh  [ install | uninstall ]  [ server | agent ] "    
 }
-
-
-pre_installation_sett(){
-    echo
-    echo "#############################################################"
-    echo "# Zabbix Auto yum Install Script for CentOS 6.+             #"
-    echo "# Def: Linux + Apache2.4 + MySQL5.7 + PHP7.0 + ZABBIX3.2    #"
-    echo "# Author: Gruiy <guanry@chingo.com>                         #"
-    echo "#############################################################"
-    echo
-    log "Info" "Starting configuare Atomic repository..."
+yum_repo_menu(){
+    mysql_version=`yum repolist all |awk '/^mysql[0-9]+/{print $2,$3}' |awk 'a[$0]++'`
+    
+}
+pre_installation_settting(){
+    log "Info" "Starting configuare repository..."
+    # add php repo 
     rpm -qa | grep "atomic-release" &>/dev/null
     if [ $? -ne 0 ]; then
          wget -c -t3 -T3 -qO- https://www.atomicorp.com/installers/atomic | bash
             if [ $? -ne 0 ]; then
-                log "Error" "Can't connect Atomic, Please configuare the HTTPS proxy..."
-                read -p "Put in the proxy address (Example: 10.10.10.10:8080 ):"  Ht_proxy
-                wget -c -t3 -T3 -qO-  https://www.atomicorp.com/installers/atomic -e use_proxy=yes -e https_proxy=$(Ht_proxy) |bash
+                log "Error" "Can't download Atomic repository, Please configuare the HTTPS proxy ..."
+                exit 1
             fi
     fi
+    # add mysql repo
+    rpm -qa |egrep "mysql.*-community-release" &>/dev/null
+    if [ $? -ne 0 ]; then
+        if centosversion 6; then
+            yum -y install https://dev.mysql.com/get/mysql80-community-release-el6-1.noarch.rpm
+        elif centosversion 7; then
+            yum -y install https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm
+        fi
+    fi
+    # enable mysql57 version repository
+    yum-config-manager --disable mysql80-community &>/dev/null  && yum-config-manager --enable mysql57-community
+    # add epel repo
+    rpm -qa |grep "epel-release" &>/dev/null
+    if [ $? -ne 0 ]; then
+        yum -y install epel-release
+    fi
+    # add zabbix repo
+    rpm -qa |grep "zabbix-release"
+    if [ $? -ne 0 ]; then
+        if centosversion 6; then
+            yum -y install http://repo.zabbix.com/zabbix/3.2/rhel/6/x86_64/zabbix-release-3.2-1.el6.noarch.rpm
+        elif centosversion 7; then 
+            yum -y install http://repo.zabbix.com/zabbix/3.2/rhel/7/x86_64/zabbix-release-3.2-1.el7.noarch.rpm
+    log "Info" "repository has been configuare, Starting Install..."
+}
+
+install_zabbix(){
     # Remove Packages
     yum -y remove mysql*
     yum -y remove mariadb*
@@ -167,39 +195,11 @@ pre_installation_sett(){
     # Install Lamp
     yum -y install httpd
     yum -y install mysql mysql-server
-    yum -y install php70w php70w-cli php70w-bcmath php70w-common php70w-dba php70w-devel php70w-enchant php70w-fpm php70w-gd php70w-mbstring php70w-mcrypt php70w-mysql php70w-pdo php70w-xml php70w-xmlrpc php70w-snmp php70w-pecl-redis && return
-}
-
-install_zabbix(){
-    tarball_name=`ls ${cur_dir}/package/`
-    soft_name=`tar xf $tarball_name `
-    cpusum=`cat /proc/cpuinfo |grep 'processor'|wc -l`
-    tar xf ${soft_name}
-    
-    make -j${cpusum} && make install
-    if [ $? -ne 0 ]; then
-        distro=`get_opsy`
-        version=`cat /proc/verson`
-        architecture=`uname -m`
-        mem=`free -m`
-        disk=`df -ah`
-        zabbix=``
-        cat >>${cur_dir}/zabbix_install.log <<EOF
-        Errors Detail:
-        Distributions:$distro
-        Architecture:$architecture
-        Version:$version
-        Memery:
-        ${mem}
-        Disk:
-        ${disk}
-        Zabbix Version: $zabbix
-        Zabbix compile parrmeter:${zabbix_configure_args}
-        Issu:Failed to install Zabbix
-EOF
-    log "Error" "Installation ZABBIX failed."
-    exit 1
-    fi
+    yum -y install atomic-php70-php atomic-php70-php-cli atomic-php70-php-common atomic-php70-php-devel atomic-php70-php-pdo atomic-php70-php-mysqlnd atomic-php70-php-mcrypt atomic-php70-php-mbstring atomic-php70-php-xml atomic-php70-php-xmlrpc
+    yum -y install atomic-php70-php-gd atomic-php70-php-bcmath atomic-php70-php-imap atomic-php70-php-odbc atomic-php70-php-ldap atomic-php70-php-json atomic-php70-php-intl
+    yum -y install atomic-php70-php-gmp atomic-php70-php-snmp atomic-php70-php-soap atomic-php70-php-tidy atomic-php70-php-opcache atomic-php70-php-enchant
+    # Install zabbix
+    yum -y install zabbix-server-mysql zabbix-web-mysql zabbix-agent
 }
 
 
@@ -215,7 +215,6 @@ conf_apache(){
 }
 
 conf_mysql(){
-	log "Info" "Starting Install MySQL5.7"
-	yum -y install https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm
+	
 }
 
