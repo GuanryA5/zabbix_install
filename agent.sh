@@ -15,8 +15,8 @@ log(){
 centosversion(){
 	local code=${1}
 	local version=$(grep -oE  "[0-9.]+" /etc/redhat-release)
-	local mian_ver=${version%%.*}
-	if [ "main_ver" == "$code" ]; then
+	local main_ver=${version%%.*}
+	if [ "$main_ver" == "$code" ]; then
 		return 0
 	else
 		return 1
@@ -57,8 +57,8 @@ install_agent(){
 
 config_agent(){
     agent_hostname=`hostname`
-    read -p "What's Agent hostname, Default(${host_name})? :" change_hostname
-    change_hostname=${change_hostname:-{agent_hostname}}
+    read -p "What's Agent hostname, Default(${agent_hostname})? :" change_hostname
+    change_hostname=${change_hostname:-{agent_hostname}
     echo "your agent hostname is: ${change_hostname} "
     # change hostname
     hostname ${change_hostname}
@@ -68,7 +68,7 @@ config_agent(){
     #configuare zabbix 
 	sed -i "s/Server=127.0.0.1/Server=${server_ip}/g" /etc/zabbix/zabbix_agentd.conf
 	sed -ri "s/(ServerActive=).*/\1${server_ip}/" /etc/zabbix/zabbix_agentd.conf
-	sed -i "s/^.*Hostname=.*$/Hostname=${g_ZABBIX_AGENT_HOSTNAME}/g" /etc/zabbix/zabbix_agentd.conf
+	sed -i "s/^.*Hostname=.*$/Hostname=${change_hostname}/g" /etc/zabbix/zabbix_agentd.conf
 	sed -ri 's@(LogFile=).*@\1/var/log/zabbix/zabbix_agentd.log@' /etc/zabbix/zabbix_agentd.conf
 	sed -i 's/LogFileSize=0/LogFileSize=10/' /etc/zabbix/zabbix_agentd.conf
     #check pataerm
