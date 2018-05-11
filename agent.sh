@@ -38,7 +38,8 @@ boot_start(){
         systemctl enable zabbix-agent
     fi
 }
-# add repo
+
+
 install_agent(){
     log "Info" "Starting configuare repositroy..."
     rpm -qa |grep "zabbix-release" &>/dev/null
