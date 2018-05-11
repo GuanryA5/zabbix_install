@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 
 log(){
     if   [ "${1}" == "Warning" ]; then
@@ -56,9 +56,9 @@ install_agent(){
 }
 
 config_agent(){
-    agent_hostname=`hostname`
+    agent_hostname=$(hostname)
     read -p "What's Agent hostname, Default(${agent_hostname})? :" change_hostname
-    change_hostname=${change_hostname:-{agent_hostname}
+    change_hostname=${change_hostname:-${agent_hostname}}
     echo "your agent hostname is: ${change_hostname} "
     # change hostname
     hostname ${change_hostname}
@@ -124,6 +124,5 @@ else
     install_agent
     config_agent
 
-    clear
     log "Info" "zabbix_agentd has installed sucessful !"
 fi
