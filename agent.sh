@@ -48,6 +48,8 @@ install_agent(){
             yum -y install http://repo.zabbix.com/zabbix/3.2/rhel/6/x86_64/zabbix-release-3.2-1.el6.noarch.rpm
         elif centosversion 7; then 
             yum -y install http://repo.zabbix.com/zabbix/3.2/rhel/7/x86_64/zabbix-release-3.2-1.el7.noarch.rpm
+        fi
+    fi
     log "Info" "repository has been configuare, Starting Install..."
     yum -y install zabbix-agent 
     boot_start
