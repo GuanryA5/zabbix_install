@@ -42,7 +42,7 @@ ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "
 memu(){
         echo
     echo "#############################################################"
-    echo "# Lamp Auto Install Script for CentOS 6.+                 #"
+    echo "# Zabbix Auto Install Script for CentOS 6.+                 #"
     echo "# Def: Linux + Apache2.4 + MySQL5.7 + PHP7.0 + ZABBIX3.2    #"
     echo "# Author: Gruiy <guanry@chingo.com>                         #"
     echo "#############################################################"
@@ -178,12 +178,13 @@ pre_installation_settting(){
         yum -y install epel-release
     fi
     # add zabbix repo
-    rpm -qa |grep "zabbix-release"
+    rpm -qa |grep "zabbix-release" &>/dev/null
     if [ $? -ne 0 ]; then
         if centosversion 6; then
             yum -y install http://repo.zabbix.com/zabbix/3.2/rhel/6/x86_64/zabbix-release-3.2-1.el6.noarch.rpm
         elif centosversion 7; then 
             yum -y install http://repo.zabbix.com/zabbix/3.2/rhel/7/x86_64/zabbix-release-3.2-1.el7.noarch.rpm
+    fi
     log "Info" "repository has been configuare, Starting Install..."
 }
 
@@ -195,9 +196,7 @@ install_zabbix(){
     # Install Lamp
     yum -y install httpd
     yum -y install mysql mysql-server
-    yum -y install atomic-php70-php atomic-php70-php-cli atomic-php70-php-common atomic-php70-php-devel atomic-php70-php-pdo atomic-php70-php-mysqlnd atomic-php70-php-mcrypt atomic-php70-php-mbstring atomic-php70-php-xml atomic-php70-php-xmlrpc
-    yum -y install atomic-php70-php-gd atomic-php70-php-bcmath atomic-php70-php-imap atomic-php70-php-odbc atomic-php70-php-ldap atomic-php70-php-json atomic-php70-php-intl
-    yum -y install atomic-php70-php-gmp atomic-php70-php-snmp atomic-php70-php-soap atomic-php70-php-tidy atomic-php70-php-opcache atomic-php70-php-enchant
+    yum -y install atomic-php70-php atomic-php70-php-cli atomic-php70-php-common atomic-php70-php-devel atomic-php70-php-pdo atomic-php70-php-mysqlnd atomic-php70-php-mcrypt atomic-php70-php-mbstring atomic-php70-php-xml atomic-php70-php-xmlrpc  atomic-php70-php-gd atomic-php70-php-bcmath atomic-php70-php-imap atomic-php70-php-odbc atomic-php70-php-ldap atomic-php70-php-json atomic-php70-php-intl atomic-php70-php-gmp atomic-php70-php-snmp atomic-php70-php-soap atomic-php70-php-tidy atomic-php70-php-opcache atomic-php70-php-enchant
     # Install zabbix
     yum -y install zabbix-server-mysql zabbix-web-mysql zabbix-agent
 }
@@ -208,10 +207,7 @@ install_zabbix(){
 ####################################
 
 conf_apache(){
-	log "Info" "Starting configuare Apache..."
-	yum -y install httpd
-	cp -f ${cur_dir}/conf/httpd.conf /etc/httpd/conf/httpd.conf
-	rm -f /etc/httpd/conf.d/welcome.conf /
+
 }
 
 conf_mysql(){
