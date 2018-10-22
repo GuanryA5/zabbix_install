@@ -39,7 +39,6 @@ boot_start(){
     fi
 }
 
-
 install_agent(){
     log "Info" "Starting configuare repositroy..."
     rpm -qa |grep "zabbix-release" &>/dev/null
@@ -57,9 +56,8 @@ install_agent(){
 
 config_agent(){
     agent_hostname=$(hostname)
-    read -p "What's Agent hostname, Default(${agent_hostname})? :" change_hostname
     change_hostname=${change_hostname:-${agent_hostname}}
-    echo "your agent hostname is: ${change_hostname} "
+    log "info" "your agent hostname is: ${change_hostname}, start configure you agentd... "
     # change hostname
     hostname ${change_hostname}
     sed -i "/^127.0.0.1/s/^127.0.0.1/&    ${change_hostname}/g" /etc/hosts
@@ -95,6 +93,12 @@ config_agent(){
     then
         sed -ri '/UnsafeUserParameters=/a UnsafeUserParameters=1' /etc/zabbix/zabbix_agentd.conf
     fi
+    # userparameter
+    CHECK=`grep "UserParameter=" /etc/zabbix/zabbix_agentd.conf|wc -l`
+    if [[ "$CHECK" == "0" ]]
+    then
+        sed -ri '/UserParameter=/a UserParameter=1' /etc/zabbix/zabbix_agentd.conf
+    fi
     # Timeout=10
     CHECK=`grep "^Timeout=3" /etc/zabbix/zabbix_agentd.conf|wc -l`
     if [[ "$CHECK" == "0" ]]
@@ -116,9 +120,9 @@ if [ $# != 3 ]; then
     echo "eg: $0 10.10.10.10 agent_01 Linux"
     exit 1
 else
-    server_ip=$1
-    change_hostname=$2
-    HostMetadata=$3
+    server_ip=${1}
+    change_hostname=${2}
+    HostMetadata=${3}
 
     rootness
     install_agent
